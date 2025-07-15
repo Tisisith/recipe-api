@@ -1,15 +1,8 @@
 from fastapi import FastAPI
-from routers import recipe  # 🔁 changed from 'app.routers'
+from routers import recipe as recipe_router
+from config.database import Base, engine
 
-from config.database import engine
-from models import recipe as recipe_model
-
-recipe_model.Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
-
-app.include_router(recipe.router)
-
-@app.get("/")
-def read_root():
-    return {"message": "Welcome to the Recipe API!"}
+app.include_router(recipe_router.router)

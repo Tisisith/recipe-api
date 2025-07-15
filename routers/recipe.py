@@ -1,28 +1,20 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from crud import recipe as recipe_crud
-from schemas import recipe as recipe_schema
-from config.database import SessionLocal
+from typing import List
+from schemas import recipe as schema
+from controllers.recipe_controller import read_recipes, read_recipe, add_recipe
+from utils.dependencies import get_db
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+@router.get("/", response_model=List[schema.RecipeOut])
+def get_recipes(db: Session = Depends(get_db)):
+    return read_recipes(db)
 
-@router.get("/", response_model=list[recipe_schema.RecipeOut])
-def read_recipes(db: Session = Depends(get_db)):
-    recipes = recipe_crud.get_recipes(db)
-    print("🔍 Recipes from DB:", recipes)
-    return recipes
+@router.get("/{recipe_id}", response_model=schema.RecipeOut)
+def get_recipe(recipe_id: int, db: Session = Depends(get_db)):
+    return read_recipe(recipe_id, db)
 
-@router.get("/{recipe_id}", response_model=recipe_schema.RecipeOut)
-def read_recipe(recipe_id: int, db: Session = Depends(get_db)):
-    recipe = recipe_crud.get_recipe_by_id(db, recipe_id)
-    if recipe is None:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Recipe not found")
-    return recipe
+@router.post("/", response_model=schema.RecipeOut)
+def create_recipe(recipe: schema.RecipeCreate, db: Session = Depends(get_db)):
+    return add_recipe(db, recipe)
